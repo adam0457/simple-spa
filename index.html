@@ -16,12 +16,12 @@
         <button id="btnSearch" class="pulse">
           <img data-src="./img/magnifying-glass.svg" class="iconic" />
         </button>
-      </form>
+       </form>
     </header>
     <main>
       <section id="instructions">
         <h2>How to Start</h2>
-        <div class="content">
+        <div class="content">         
           <p>
             Enter an actors name in the search box at the top of the screen and
             click on the search icon.
@@ -34,20 +34,23 @@
             Clicking on an actors name or image will load a list of movies and
             shows in which they have appeared.
           </p>
+          <img class="logo" src="./img/logo-TMDB.svg" alt="Logo of TMDB">
         </div>
       </section>
-      <section id="actors" class="active">
-        <h2>Actors</h2>
-        <div class="content">
-          <p>Content grid will go here</p>
-          <p>Content grid will go here</p>
-          <p>Content grid will go here</p>
-          <p>Content grid will go here</p>
-        </div>
-      </section>
+      <!-- <section id="actors" class="active"> -->
+        <section id="actors">
+            <h2>Actors</h2>
+          <!-- <div class="content"> -->
+            <div class="cards"></div>
+        </section>
       <section id="media">
-        <h2>Media</h2>
-        <div class="content"></div>
+        <div class="header-media">
+          <h2>Media</h2>
+          <p></p>
+          <a class="btn-back" href="">Back</a>
+        </div>
+        <!-- <div class="content"></div> -->
+        <div class="cards-media"></div>
       </section>
     </main>
   </body>
