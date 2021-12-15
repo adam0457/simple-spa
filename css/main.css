@@ -84,19 +84,20 @@ header form {
   content area
 *******************/
 
-#instructions {
+#instructions, #actors, #media {
   display: none;
+    /* transition: opacity 1s ease-out;
+    opacity: 0;
+    height: 0;
+    overflow: hidden; */
 }
-#actors {
-  display: none;
-}
-#media {
-  display: none;
-}
+
 #instructions.active,
 #actors.active,
 #media.active {
   display: block;
+    /* opacity: 1;
+    height: auto; */
 }
 
 .content p, #instructions h2, .logo {
@@ -104,7 +105,7 @@ header form {
   margin: 1rem 0;
   color: hsl(20, 10%, 50%);
 }
-h2 {
+h2, a {
   color: hsl(20, 10%, 50%);
 }
 

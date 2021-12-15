@@ -1,8 +1,9 @@
 
-
+'use strict';
 document.addEventListener('DOMContentLoaded', init);
 
 /** My global variables */
+let queryActor;
 let actorsArr = [];
 let secureBaseUrl;
 let logoSize;
@@ -13,12 +14,20 @@ let cards = document.querySelector('.cards');
 let cardsMedia = document.querySelector('.cards-media');
 let inputName = document.querySelector('#search');
 let back = document.querySelector('.btn-back');
-back.addEventListener('click', goBack);
+let nameElement = document.querySelector('.name');
+let popularityElement = document.querySelector('.popularity');
 let urlConfig = `https://api.themoviedb.org/3/configuration?api_key=${APIKEY}`;
+
 
 /** This will initialize the app  */
 
-function init() {  
+function init() { 
+  /** Those are some events that we will need to handle navigation and sorting by name and popularity */
+  window.addEventListener('popstate', popFunction);
+  back.addEventListener('click', goBack);  // This is for the back button which is an anchor tag.
+  nameElement.addEventListener('click', sortByName);
+  popularityElement.addEventListener('click', sortByPopularity);
+
   /** We're making the instruction page the default page */
   activateSection('#instructions');
 
@@ -41,21 +50,6 @@ function init() {
   getConfig();
 }
 
-/** This function will make the search based on the value of the text field. 
- * It will call the function getActor() 
- * */
-function search(ev){
-  ev.preventDefault();
-  let queryActor = inputName.value;
-  if(queryActor !== ''){
-    let urlActor =` https://api.themoviedb.org/3/search/person?api_key=${APIKEY}&query=${queryActor}`;
-    getActor(urlActor);
-  }
-  else {alert('You did not enter any name')}
-
-  inputName.value = '';    
-}
-
 function getConfig(){
   fetch(urlConfig)
   .then(response => {
@@ -74,13 +68,42 @@ function getConfig(){
   
 }
 
-function getActor(url){
+/** This function will make the search based on the value of the text field. 
+ * It will call the function getActor() 
+ * */
+function search(ev){
+  ev.preventDefault();
+  queryActor = inputName.value;
+  if(queryActor !== ''){
+    getActors(queryActor);
+    history.pushState(null,' ', `#${queryActor}`);
+  }
+  else {alert('You did not enter any name')}
+
+  inputName.value = '';    
+}
+
+
+function getActors(searchString){
+  let stringData = localStorage.getItem(searchString);
+  if(stringData){
+    let dataFromLocaleStorage = JSON.parse(stringData);
+    actorsArr = dataFromLocaleStorage;
+    displayCards(actorsArr, 'actor');
+  }else{
+    let urlActor =` https://api.themoviedb.org/3/search/person?api_key=${APIKEY}&query=${searchString}`;
+    fetchActor(urlActor);
+  }
+}
+
+function fetchActor(url){
   fetch(url)
   .then(response => {
     return response.json();
   }).then(data => {
     actorsArr = data.results;
-    /** The function getActor is using the displayCards function to display the info of 
+    localStorage.setItem(queryActor, JSON.stringify(actorsArr));
+    /** The function fetchActor is using the displayCards function to display the info of 
      * the actors(photo, name and a number of stars emoji based on his popularity)
      * 
      */
@@ -103,21 +126,33 @@ function activateSection(sectionId){
     })
   }
   sectionToActivate.classList.add('active');
+  
 }
 
-/** This function is for displaying the media (movie or Tv show) based on the actor 
- * that the user has clicked on. It also makes use of the displayCard to do that.
+/** 
+ * actorDetails() is called when the user clicks on an actor, media() will grab all the 
+ * info regarding this actor from the global array actorsArr[] and displayCards() will display the results.
  *   
  * */
+
 function actorDetails(ev){
-  let actorClicked = ev.currentTarget;  
-  let actorId = actorClicked.getAttribute('id');
+  let actorClicked = ev.currentTarget;   
+  let id = actorClicked.getAttribute('id');
+  media(id);
+  let hash = location.hash;
+  history.pushState({'actor': id}, '', `${hash}/${id}`)
+  
+}
+
+
+function media(actor){
+  let actorId = actor;
   let actorInfo = actorsArr.filter(actor => actor.id == actorId);
   let success = actorInfo[0].known_for;
   let actorName = actorInfo[0].name;
   let pHeaderMedia = document.querySelector('.header-media p');
   pHeaderMedia.textContent = `${actorName} is well known for:`;
-  displayCards(success, 'media');
+  displayCards(success, 'media');  
 }
 
 /** The displayCards is responsible for displaying actors or media */
@@ -157,9 +192,13 @@ function displayCards(arr, cardType){
 
           let h2 = document.createElement('h2');
           let p = document.createElement('p');
+
+          let h3 = document.createElement('h3');
+
           if(cardType == 'actor'){
             img.setAttribute('alt', `Image of the actor ${item.name}`);
             h2.textContent = item.name;
+            h3.textContent = 'Popularity: '+ item.popularity;
             p.innerHTML = addEmoji(item.popularity);
           }else if(item.media_type == 'movie'){
               h2.textContent = item.original_title;
@@ -174,7 +213,7 @@ function displayCards(arr, cardType){
             let cardText = document.createElement('div');
             cardText.classList.add('card-text');         
 
-            cardText.append(h2, p);
+            cardText.append(h2, h3, p);
 
             card.append(imgWrap, cardText);
             
@@ -200,7 +239,7 @@ function displayCards(arr, cardType){
 /** This is for when we need to go back to the actors page */
 function goBack(ev){
   ev.preventDefault();
-  activateSection('#actors');
+  history.back();
 }
 
 /** This is for adding the emoji. I made up a convention to display 2, 3, 4 or 5 stars */
@@ -218,3 +257,99 @@ function addEmoji(popularity){
 
   return emojis;
 }
+
+/** We use popFunction() to handle the popstate event when the user navigates 
+ * (back and forward in the browser) 
+ * in the app.
+ * */
+function popFunction(ev){
+  let hash = location.hash;
+  if(history.state){
+    let hs = JSON.stringify(history.state);
+    let data = JSON.parse(hs);
+    /** Making sure that the current actor in the url (even after several back and forth) 
+     * is in the global array. I will grab the values from localstorage. 
+     * */
+      // let currentActor = hash.substring(hash.indexOf('#') + 1, hash.lastIndexOf('/') );
+      let currentActor = hash.substring(1, hash.lastIndexOf('/') );
+      let stringFromLS = localStorage.getItem(currentActor);
+      let currActorsFromLS = JSON.parse(stringFromLS);
+      actorsArr = currActorsFromLS;
+    /** end */
+    return media(data.actor);
+  }else
+      if(hash){   
+        let param = hash.replace('#', '');
+        queryActor = param;
+        let urlActor =` https://api.themoviedb.org/3/search/person?api_key=${APIKEY}&query=${param}`;
+        getActors(queryActor); 
+      }else{
+        activateSection('#instructions');
+      }   
+}
+
+/** Sorting the actors by name and popularity*/
+let order = true; // This is a global variable.
+
+function sortByName(ev){
+  ev.preventDefault();
+  if(order){
+    ascendant(actorsArr, 'name');
+    displayCards(actorsArr, 'actor');
+  }else{
+    descendant(actorsArr, 'name');
+    displayCards(actorsArr, 'actor');
+  }
+  order = !order;
+}
+
+function sortByPopularity(ev){
+  ev.preventDefault();
+  if(order){
+    ascendant(actorsArr, 'popularity');
+    displayCards(actorsArr, 'actor');
+  }else{
+    descendant(actorsArr, 'popularity');
+    displayCards(actorsArr, 'actor');
+  }
+  order = !order;    
+}
+
+function ascendant(arr, sortingChoice){
+  if(sortingChoice === 'name'){
+      arr.sort((a,b) => {
+        let x = a[sortingChoice].toLowerCase();
+        let y = b[sortingChoice].toLowerCase();      
+        if (x < y) {
+          return -1;
+        }
+        if (x > y) {
+          return 1;
+        }      
+        return 0;       
+      })
+  }else if(sortingChoice === 'popularity'){
+    arr.sort((a,b) => a[sortingChoice] - b[sortingChoice]);
+  }  
+}
+
+function descendant(arr, sortingChoice){
+  if(sortingChoice === 'name'){
+    arr.sort((a,b) => {
+      let x = a[sortingChoice].toLowerCase();
+      let y = b[sortingChoice].toLowerCase();      
+      if (x < y) {
+        return 1;
+      }
+      if (x > y) {
+        return -1;
+      }      
+      return 0;       
+    })
+  }else if(sortingChoice === 'popularity'){
+    arr.sort((a,b) => b[sortingChoice] - a[sortingChoice]);
+  }
+  
+}
+
+/** End sorting by name and popularity */
