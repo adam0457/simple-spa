@@ -19,6 +19,7 @@ let popularityElement = document.querySelector('.popularity');
 let urlConfig = `https://api.themoviedb.org/3/configuration?api_key=${APIKEY}`;
 
 
+
 /** This will initialize the app  */
 
 function init() { 
@@ -353,3 +354,4 @@ function descendant(arr, sortingChoice){
 }
 
 /** End sorting by name and popularity */
+
